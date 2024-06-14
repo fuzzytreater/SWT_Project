@@ -72,7 +72,8 @@ public class ArticleService {
         article.setProducts(products);
         article.setArticleImages(images);
         try {
-            return articleRepository.save(article);
+            articleRepository.save(article);
+            return article;
         } catch (Exception e) {
             throw new RuntimeException("Failed to save article", e);
         }

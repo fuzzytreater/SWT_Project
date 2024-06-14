@@ -65,7 +65,8 @@ public class UserService {
         }
         User user = userMapper.toEntity(userDTO);
         user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
-        return userRepository.save(user);
+        userRepository.save(user);
+        return user;
     }
 
     public List<User> getAllUsers() {
@@ -109,7 +110,8 @@ public class UserService {
         User user = userRepository.findById(userDTO.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
         userMapper.updateEntity(userDTO, user);
-        return userRepository.save(user);
+        userRepository.save(user);
+        return user;
     }
 
     public String updateMail(String username, String newMail) {
