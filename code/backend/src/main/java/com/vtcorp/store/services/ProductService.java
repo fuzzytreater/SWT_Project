@@ -45,15 +45,20 @@ public class ProductService {
     }
 
     public List<Product> getActiveProducts() {
-        return productRepository.findProductsByActive(true);
+        return productRepository.findByActive(true);
+    }
+
+    public List<Product> getAllProducts() {
+        return productRepository.findAll();
     }
 
     public Product getProductById(Long id) {
-        return productRepository.getReferenceById(id);
+        return productRepository.findById(id).orElse(null);
     }
 
     @Transactional
-    public Product saveProduct(ProductDTO productDTO) {
+    public Product addProduct(ProductDTO productDTO) {
+
         Brand brand = brandRepository.findById(productDTO.getBrandId())
                 .orElseThrow(() -> new RuntimeException("Brand not found"));
         List<Category> categories = categoryRepository.findAllById(productDTO.getCategoryIds());
@@ -88,7 +93,7 @@ public class ProductService {
         List<ProductImage> imagesToDelete = null;
         if (savedImages != null && !savedImages.isEmpty()) {
             imagesToDelete = new ArrayList<>(savedImages);
-            List<Long> imageToKeepIds = productDTO.getImageProductIds();
+            List<Long> imageToKeepIds = productDTO.getImageIds();
             if (imageToKeepIds != null && !imageToKeepIds.isEmpty()) {
                 List<ProductImage> imagesToKeep = productImageRepository.findAllById(imageToKeepIds);
                 imagesToDelete.removeAll(imagesToKeep);
@@ -138,7 +143,7 @@ public class ProductService {
         return productImageList;
     }
 
-    public void removeImages(List<ProductImage> images) {
+    private void removeImages(List<ProductImage> images) {
         for (ProductImage image : images) {
             Path imagePath = Paths.get(UPLOAD_DIR, image.getImagePath());
             try {
@@ -148,4 +153,15 @@ public class ProductService {
             }
         }
     }
+
+    public String deactivateProduct(long id) {
+        productRepository.setActivateProduct(false, id);
+        return "Product deactivated";
+    }
+
+    public String activateProduct(long id) {
+        productRepository.setActivateProduct(true, id);
+        return "Product activated";
+    }
+
 }
