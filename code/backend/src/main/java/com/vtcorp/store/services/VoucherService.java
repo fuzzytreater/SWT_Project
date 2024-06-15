@@ -41,7 +41,8 @@ public class VoucherService {
     public Voucher createVoucher(VoucherDTO voucherDTO) {
         Voucher voucher = voucherMapper.toEntity(voucherDTO);
         try {
-            return voucherRepository.save(voucher);
+            voucherRepository.save(voucher);
+            return voucher;
         } catch (Exception e) {
             throw new RuntimeException("Fail to create voucher", e);
         }

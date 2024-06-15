@@ -72,7 +72,8 @@ public class ProductService {
         List<ProductImage> images = handleProductImages(productDTO.getNewImageFiles(), product);
         product.setProductImages(images);
         try {
-            return productRepository.save(product);
+            productRepository.save(product);
+            return product;
         } catch (Exception e) {
             throw new RuntimeException("Failed to save product", e);
         }
