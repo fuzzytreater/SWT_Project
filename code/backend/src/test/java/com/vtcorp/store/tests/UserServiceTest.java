@@ -1,5 +1,6 @@
 package com.vtcorp.store.tests;
 
+import com.vtcorp.store.dtos.ChangePasswordDTO;
 import com.vtcorp.store.dtos.ForgotPasswordDTO;
 import com.vtcorp.store.dtos.LoginDTO;
 import com.vtcorp.store.dtos.UserDTO;
@@ -77,4 +78,16 @@ public class UserServiceTest {
         assertEquals(newCity, updatedUser.getCity());
     }
 
+    @Test
+    public void testRegisterUser() {
+        UserDTO newUser = new UserDTO();
+        newUser.setUsername("newuser");
+        newUser.setPassword("newpassword123");
+        newUser.setCity("Ha Noi");
+        newUser.setMail("newuser@gmail.com");
+
+        String registeredUser = userService.register(newUser);
+
+        assertEquals("User registered successfully", registeredUser);
+    }
 }

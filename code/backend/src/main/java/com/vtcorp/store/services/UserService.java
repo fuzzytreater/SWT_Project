@@ -98,14 +98,6 @@ public class UserService {
         return "Check your email to recover password";
     }
 
-    public boolean forgot(ForgotPasswordDTO forgotPasswordDTO) {
-        if (!userRepository.existsByMail(forgotPasswordDTO.getMail())) {
-            throw new IllegalArgumentException("Mail not found");
-        }
-        return true;
-    }
-
-
     public String changePassword(ChangePasswordDTO changePasswordDTO) {
         String token = changePasswordDTO.getToken();
         if (token == null) {
@@ -120,6 +112,14 @@ public class UserService {
         userRepository.save(user);
         emailSenderService.sendEmail(mail, "Password Changed", "Your password has been changed successfully");
         return "Password changed successfully";
+    }
+
+    public User changePasswordV2(UserDTO userDTO) {
+        User user = userRepository.findById(userDTO.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        userMapper.updateEntity(userDTO, user);
+        userRepository.save(user);
+        return user;
     }
 
     @Transactional
