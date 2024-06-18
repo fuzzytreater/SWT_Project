@@ -8,6 +8,7 @@ import com.vtcorp.store.entities.User;
 import com.vtcorp.store.mappers.UserMapper;
 import com.vtcorp.store.repositories.UserRepository;
 import jakarta.transaction.Transactional;
+import lombok.extern.java.Log;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -18,6 +19,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UserService {
@@ -50,6 +52,13 @@ public class UserService {
         } catch (UsernameNotFoundException e) {
             throw new UsernameNotFoundException("User not found");
         }
+    }
+
+    public Optional<User> loginV2(LoginDTO loginDTO) {
+        Optional<User> user = userRepository.findByUsernameAndPassword(loginDTO.getUsername(), loginDTO.getPassword());
+        if (user.isEmpty())
+            return null;
+        return user;
     }
 
     public String register(UserDTO userDTO) {
@@ -88,6 +97,14 @@ public class UserService {
         emailSenderService.sendEmail(forgotPasswordDTO.getMail(), "Password recovery", content);
         return "Check your email to recover password";
     }
+
+    public boolean forgot(ForgotPasswordDTO forgotPasswordDTO) {
+        if (!userRepository.existsByMail(forgotPasswordDTO.getMail())) {
+            throw new IllegalArgumentException("Mail not found");
+        }
+        return true;
+    }
+
 
     public String changePassword(ChangePasswordDTO changePasswordDTO) {
         String token = changePasswordDTO.getToken();
