@@ -34,3 +34,69 @@ FE-10	Reporting & Analysis
 | SE183122-Lê Đặng Minh Trí | x     |       |       | x     |       |       |       | x     |       |       |       |       |       |       |       |       | x     |       |       |       |       |       |       |       |       | x     |       |       |       |
 | SE183228-Nguyễn Cơ Hiếu |       | x     |       | x     |       |       |       |       | x     |       |       |       |       |       |       |       | x     |       |       |       |       |       |       |       | x     |       |       |       |       |
 | SE183230-Nguyễn Quỳnh Như |       |       | x     |       |       | x     |       |       |       |       |       |       |       | x     |       |       |       |       |       | x     |       | x     |       |       |       |       | x     |       | x     |
+
+
+
+
+## Member User Stories
+
+<table>
+  <tr>
+    <th>Member</th>
+    <th>US-01</th>
+    <th>US-02</th>
+    <th>US-03</th>
+    <th>US-04</th>
+    <th>US-05</th>
+    <th>US-06</th>
+    <th>US-07</th>
+    <th>US-08</th>
+    <th>US-09</th>
+    <th>US-10</th>
+    <th>US-11</th>
+    <th>US-12</th>
+    <th>US-13</th>
+    <th>US-14</th>
+    <th>US-15</th>
+    <th>US-16</th>
+    <th>US-17</th>
+    <th>US-18</th>
+    <th>US-19</th>
+    <th>US-20</th>
+    <th>US-21</th>
+    <th>US-22</th>
+    <th>US-23</th>
+    <th>US-24</th>
+    <th>US-25</th>
+    <th>US-26</th>
+    <th>US-27</th>
+    <th>US-28</th>
+    <th>US-29</th>
+    <th>US-30</th>
+  </tr>
+  <tr>
+    <td>CE171488-Bùi Mạnh Cường</td>
+    <td></td><td></td><td></td><td></td><td></td><td></td><td>x</td><td>x</td><td></td><td></td><td></td><td></td><td></td><td></td><td>x</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>x</td><td></td><td></td><td>x</td>
+  </tr>
+  <tr>
+    <td>SE160914-Võ Nguyễn Minh Quân</td>
+    <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>x</td><td></td><td></td><td>x</td><td></td><td></td><td></td><td>x</td><td>x</td><td></td><td></td>
+  </tr>
+  <tr>
+    <td>SE161146-Phạm Văn Phong</td>
+    <td></td><td></td><td></td><td></td><td></td><td>x</td><td></td><td></td><td></td><td></td><td></td><td>x</td><td></td><td></td><td></td><td></td><td>x</td><td></td><td></td><td></td><td>x</td><td></td><td></td><td>x</td><td></td><td></td><td>x</td>
+  </tr>
+  <tr>
+    <td>SE183122-Lê Đặng Minh Trí</td>
+    <td>x</td><td></td><td></td><td>x</td><td></td><td></td><td></td><td>x</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>x</td><td></td><td></td><td></td><td></td><td></td><td></td><td>x</td><td></td><td></td><td></td>
+  </tr>
+  <tr>
+    <td>SE183228-Nguyễn Cơ Hiếu</td>
+    <td></td><td>x</td><td></td><td>x</td><td></td><td></td><td></td><td></td><td>x</td><td></td><td></td><td></td><td></td><td></td><td></td><td>x</td><td></td><td></td><td></td><td></td><td></td><td></td><td>x</td><td></td><td></td><td></td>
+  </tr>
+  <tr>
+    <td>SE183230-Nguyễn Quỳnh Như</td>
+    <td></td><td></td><td>x</td><td></td><td></td><td>x</td><td></td><td></td><td></td><td></td><td></td><td></td><td>x</td><td></td><td></td><td></td><td></td><td>x</td><td></td><td>x</td><td></td><td></td><td></td><td></td><td>x</td><td></td><td>x</td>
+  </tr>
+</table>
+
