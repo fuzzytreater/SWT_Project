@@ -1,10 +1,6 @@
 # Moms & Babies Online Store System Project
 
-![Jira](https://phongpv.atlassian.net/jira/software/c/projects/NNS/boards/6)
-
-
-
-
+![Logo](logo.webp)
 
 ## A brief description: 
 The Moms & Babies Store System is an innovative web application revolutionizing the shopping experience for mothers and babies. Our platform provides the process of acquiring essential items, offering a selection of high-quality products from trusted brands. Built on the expectation of a high demand for convenience and user-friendliness, the system aims to cater to every mothers regardless of tech-savvy level. Popular credentials and payment methods are integrated. As the system evolves, our vision includes expanding product offerings and enhancing features to meet the evolving needs of our customers.
