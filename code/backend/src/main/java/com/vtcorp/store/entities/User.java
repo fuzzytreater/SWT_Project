@@ -1,9 +1,11 @@
 package com.vtcorp.store.entities;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.Date;
 import java.util.List;
 
 @Entity
@@ -26,19 +28,18 @@ public class User {
     private String street;
     private Integer point;
     private String role;
+    @JsonFormat(pattern = "dd-MM-yyyy")
+    private Date registeredDate;
 
-    @JsonIgnoreProperties("user")
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Order> orders;
 
-    @JsonIgnoreProperties({"orders", "users"})
     @ManyToMany
     @JoinTable(name = "voucher_availability",
             joinColumns = @JoinColumn(name = "fk_username"),
             inverseJoinColumns = @JoinColumn(name = "fk_voucher_id"))
     private List<Voucher> vouchers;
 
-    @JsonIgnoreProperties("user")
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductReview> productReviews;
 

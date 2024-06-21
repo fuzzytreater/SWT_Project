@@ -1,14 +1,10 @@
 package com.vtcorp.store.services;
 
-import com.vtcorp.store.dtos.ChangePasswordDTO;
-import com.vtcorp.store.dtos.ForgotPasswordDTO;
-import com.vtcorp.store.dtos.UserDTO;
-import com.vtcorp.store.dtos.LoginDTO;
+import com.vtcorp.store.dtos.*;
 import com.vtcorp.store.entities.User;
 import com.vtcorp.store.mappers.UserMapper;
 import com.vtcorp.store.repositories.UserRepository;
 import jakarta.transaction.Transactional;
-import lombok.extern.java.Log;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -19,7 +15,6 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class UserService {
@@ -46,44 +41,41 @@ public class UserService {
         try {
             // generate token
             String username = loginDTO.getUsername();
-            Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
-                    username, loginDTO.getPassword()));
+            Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, loginDTO.getPassword()));
             return tokenService.generateLoginToken(authentication);
         } catch (UsernameNotFoundException e) {
             throw new UsernameNotFoundException("User not found");
         }
     }
 
-    public Optional<User> loginV2(LoginDTO loginDTO) {
-        Optional<User> user = userRepository.findByUsernameAndPassword(loginDTO.getUsername(), loginDTO.getPassword());
-        if (user.isEmpty())
-            return null;
-        return user;
-    }
-
-    public String register(UserDTO userDTO) {
-        userDTO.setRole("ROLE_CUSTOMER");
-        addUser(userDTO);
-        emailSenderService.sendEmail(userDTO.getMail(), "Welcome to our store", "Welcome to our store, " + userDTO.getName());
-        return "User registered successfully";
-    }
-
-    public User addUser(UserDTO userDTO) {
-        if (userRepository.existsByUsername(userDTO.getUsername())) {
+    public String register(UserRequestDTO userRequestDTO) {
+        if (userRepository.existsByUsername(userRequestDTO.getUsername())) {
             throw new IllegalArgumentException("User already exists");
         }
-        User user = userMapper.toEntity(userDTO);
-        user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
-        userRepository.save(user);
-        return user;
+        User user = userMapper.toEntity(userRequestDTO);
+        user.setPassword(passwordEncoder.encode(userRequestDTO.getPassword()));
+        user.setRole("ROLE_CUSTOMER");
+        user = userRepository.save(user);
+        emailSenderService.sendEmail(user.getMail(), "Welcome to our store", "Welcome to our store, " + user.getName());
+        return tokenService.generateAccessToken(user);
     }
 
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
+    public UserResponseDTO addUser(UserRequestDTO userRequestDTO) {
+        if (userRepository.existsByUsername(userRequestDTO.getUsername())) {
+            throw new IllegalArgumentException("User already exists");
+        }
+        User user = userMapper.toEntity(userRequestDTO);
+        user.setPassword(passwordEncoder.encode(userRequestDTO.getPassword()));
+        return userMapper.toResponseDTO(userRepository.save(user));
     }
 
-    public User getUserById(String id) {
-        return userRepository.findById(id).orElse(null);
+    public List<UserResponseDTO> getAllUsers() {
+        return userMapper.toResponseDTOs(userRepository.findAll());
+    }
+
+    public UserResponseDTO getUserById(String id) {
+        return userMapper.toResponseDTO(userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found")));
     }
 
     public String forgotPassword(ForgotPasswordDTO forgotPasswordDTO) {
@@ -114,21 +106,13 @@ public class UserService {
         return "Password changed successfully";
     }
 
-    public User changePasswordV2(UserDTO userDTO) {
-        User user = userRepository.findById(userDTO.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        userMapper.updateEntity(userDTO, user);
-        userRepository.save(user);
-        return user;
-    }
-
     @Transactional
-    public User updateUser(UserDTO userDTO) {
-        User user = userRepository.findById(userDTO.getUsername())
+    public UserResponseDTO updateUser(UserRequestDTO userRequestDTO) {
+        User user = userRepository.findById(userRequestDTO.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        userMapper.updateEntity(userDTO, user);
+        userMapper.updateEntity(userRequestDTO, user);
         userRepository.save(user);
-        return user;
+        return userMapper.toResponseDTO(user);
     }
 
     public String updateMail(String username, String newMail) {
@@ -155,4 +139,5 @@ public class UserService {
         userRepository.save(user);
         return "Mail changed successfully";
     }
+
 }

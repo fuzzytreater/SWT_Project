@@ -34,21 +34,17 @@ public class Order {
     private Integer totalPoint;
     private String trackingCode;
 
-    @JsonIgnoreProperties({"orders", "vouchers", "productReviews"})
     @ManyToOne
     @JoinColumn(name = "fk_username")
     private User user;
 
-    @JsonIgnoreProperties({"orders", "users"})
     @ManyToOne
     @JoinColumn(name = "fk_voucher_id")
     private Voucher voucher;
 
-    @JsonIgnoreProperties("order")
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderDetail> orderDetails;
 
-    @JsonIgnoreProperties("order")
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<GiftIncluding> giftIncludings;
 
