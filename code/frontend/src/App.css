@@ -6,6 +6,7 @@
 
 html {
   font-size: 100%;
+  /* overflow-x: hidden; */
 }
 
 body::-webkit-scrollbar-track {
@@ -23,4 +24,46 @@ body::-webkit-scrollbar {
 body::-webkit-scrollbar-thumb {
   border-radius: 10px;
   background-color: rgb(115, 115, 115);
+}
+
+.breadcrumb {
+  display: flex;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 10px 10px;
+}
+
+.breadcrumb-item {
+  margin-right: 0.5rem;
+}
+
+.breadcrumb-item a {
+  text-decoration: none;
+  color: black;
+}
+
+.breadcrumb-item::before {
+  content: none !important;
+}
+
+.breadcrumb-item::after {
+  content: ">";
+  margin-left: 1rem;
+}
+
+.breadcrumb-item:last-child::after {
+  content: "";
+}
+
+#dropdown-basic::after {
+  display: none;
+}
+
+#dropdown-basic {
+  background-color: black;
+}
+
+.dropdown {
+  float: right;
+  margin: auto 0;
 }

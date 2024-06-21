@@ -4,6 +4,7 @@ import com.vtcorp.store.dtos.ChangePasswordDTO;
 import com.vtcorp.store.dtos.ForgotPasswordDTO;
 import com.vtcorp.store.dtos.LoginDTO;
 import com.vtcorp.store.dtos.UserDTO;
+import com.vtcorp.store.dtos.UserRequestDTO;
 import com.vtcorp.store.entities.User;
 import com.vtcorp.store.repositories.UserRepository;
 import com.vtcorp.store.services.UserService;
@@ -64,7 +65,7 @@ public class UserServiceTest {
     public void testUpdateUser() {
         String newCity = "Ha Noi";
 
-        UserDTO userDTO = new UserDTO();
+        UserRequestDTO userDTO = new UserRequestDTO();
         userDTO.setUsername("Tris");
         userDTO.setPassword("hello1234");
         userDTO.setCity(newCity);

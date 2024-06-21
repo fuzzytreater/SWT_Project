@@ -1,3 +1,5 @@
+import { articles } from "../services/auth/UsersService";
+
 export const routes = {
   homePage: "/",
   login: "/login",
@@ -5,5 +7,15 @@ export const routes = {
   forgotPassword: "/forgotPassword",
   resetPassword: "/resetPassword",
   products: "/products",
-  productDetail: "/products/:id",
+  brands: "/brands",
+  articles: "/articles",
+  admin: "/admin",
+  customer: "/customer",
+  manageProduct: "/manageProduct",
+  manageOrder: "/manageOrder",
+  manageArticle: "/manageArticle",
+  staffProfile: "/staffProfile",
+  manageVoucher: "/manageVoucher",
+  manageAccount: "/manageAccount",
+  cart: "/cart",
 };
