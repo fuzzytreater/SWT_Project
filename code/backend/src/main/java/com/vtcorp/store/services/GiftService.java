@@ -84,4 +84,23 @@ public class GiftService {
         return storedFileName;
     }
 
+    @Transactional
+    public String redeemGift(Long giftId, int userPoints) {
+        Gift gift = giftRepository.findById(giftId)
+                .orElseThrow(() -> new RuntimeException("Gift not found"));
+
+        if (!gift.isActive()) {
+            return "Gift is not active";
+        }
+
+        if (userPoints < gift.getPoint()) {
+            return "Not enough points to redeem this gift";
+        }
+
+        // Logic to apply the gift to the user's session
+        // For example, reduce the user's points and mark the gift as redeemed
+
+        return "Gift redeemed successfully";
+    }
+
 }

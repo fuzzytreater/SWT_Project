@@ -3,7 +3,6 @@ package com.vtcorp.store.tests;
 import com.vtcorp.store.dtos.ChangePasswordDTO;
 import com.vtcorp.store.dtos.ForgotPasswordDTO;
 import com.vtcorp.store.dtos.LoginDTO;
-import com.vtcorp.store.dtos.UserDTO;
 import com.vtcorp.store.dtos.UserRequestDTO;
 import com.vtcorp.store.entities.User;
 import com.vtcorp.store.repositories.UserRepository;
