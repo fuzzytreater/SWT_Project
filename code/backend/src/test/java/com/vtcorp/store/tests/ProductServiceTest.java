@@ -242,6 +242,50 @@ public class ProductServiceTest {
         assertEquals(0, result.size());
     }
 
+    @Test
+    public void testAddProduct_Success() {
+        // Initialize categoryIds
+        categoryIds = Arrays.asList(1L, 2L);
+        categories = Arrays.asList(category, category2);
+        productRequestDTO.setCategoryIds(categoryIds);
 
+        // Mocking repository and mapper methods
+        when(brandRepository.findById(productRequestDTO.getBrandId())).thenReturn(Optional.of(brand));
+        // Example of mocking category repository
+        when(categoryRepository.findAllById(productRequestDTO.getCategoryIds())).thenReturn(categories);
+        when(productMapper.toEntity(productRequestDTO)).thenReturn(addProduct);
+        when(productRepository.save(addProduct)).thenReturn(addProduct);
+
+        // Call the service method
+        Product createdProduct = productService.addProduct(productRequestDTO);
+
+        // Assertions
+        assertNotNull(createdProduct);
+        assertEquals(addProduct.getName(), createdProduct.getName());
+        assertEquals(addProduct.getBrand().getBrandId(), createdProduct.getBrand().getBrandId());
+        verify(productRepository, times(1)).save(addProduct);
+    }
+
+    @Test
+    public void testAddProduct_NotFoundCategory() {
+        // Initialize categoryIds
+        categoryIds = Arrays.asList(1L, 2L);
+        categories = Arrays.asList();
+        productRequestDTO.setCategoryIds(categoryIds);
+
+        // Mocking repository and mapper methods
+        when(brandRepository.findById(productRequestDTO.getBrandId())).thenReturn(Optional.of(brand));
+        // Example of mocking category repository
+        when(categoryRepository.findAllById(productRequestDTO.getCategoryIds())).thenReturn(categories);
+        when(productMapper.toEntity(productRequestDTO)).thenReturn(addProduct);
+
+        RuntimeException thrownException = assertThrows(RuntimeException.class, () -> {
+            productService.addProduct(productRequestDTO);
+        });
+
+        assertEquals("One or more categories not found", thrownException.getMessage());
+
+        verify(productRepository, never()).save(any(Product.class));
+    }
 
 }
