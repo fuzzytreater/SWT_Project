@@ -1,11 +1,15 @@
 package com.vtcorp.store.services;
 
 import com.vtcorp.store.dtos.ProductRequestDTO;
+import com.vtcorp.store.dtos.ProductResponseDTO;
+import com.vtcorp.store.dtos.ReviewRequestDTO;
 import com.vtcorp.store.entities.*;
 import com.vtcorp.store.mappers.ProductMapper;
+import com.vtcorp.store.mappers.ProductReviewMapper;
 import com.vtcorp.store.repositories.*;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -15,44 +19,101 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.*;
 
 @Service
 public class ProductService {
 
-    private static final String UPLOAD_DIR = "src/main/resources/static/images/products";
+    private static final String UPLOAD_PRODUCT_IMG_DIR = "src/main/resources/static/images/products";
+    private static final String UPLOAD_REVIEW_IMG_DIR = "src/main/resources/static/images/reviews";
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
     private final BrandRepository brandRepository;
     private final CategoryRepository categoryRepository;
     private final ProductImageRepository productImageRepository;
+    private final UserRepository userRepository;
+    private final ProductReviewMapper productReviewMapper;
+    private final ProductReviewRepository productReviewRepository;
 
     @Autowired
-    public ProductService(ProductRepository productRepository, ProductMapper productMapper, BrandRepository brandRepository, CategoryRepository categoryRepository, ProductImageRepository productImageRepository) {
+    public ProductService(ProductRepository productRepository, ProductMapper productMapper, BrandRepository brandRepository, CategoryRepository categoryRepository, ProductImageRepository productImageRepository, UserRepository userRepository, ProductReviewMapper productReviewMapper, ProductReviewRepository productReviewRepository) {
         this.productRepository = productRepository;
         this.productMapper = productMapper;
         this.brandRepository = brandRepository;
         this.categoryRepository = categoryRepository;
         this.productImageRepository = productImageRepository;
+        this.userRepository = userRepository;
+        this.productReviewMapper = productReviewMapper;
+        this.productReviewRepository = productReviewRepository;
     }
 
-    public List<Product> getActiveProducts() {
-        return productRepository.findByActive(true);
+    public List<ProductResponseDTO> getAllProducts() {
+        return mapProductsToProductResponseDTOs(productRepository.findAll());
     }
 
-    public List<Product> getAllProducts() {
-        return productRepository.findAll();
+    public List<ProductResponseDTO> getActiveProducts() {
+        return mapProductsToProductResponseDTOs(productRepository.findByActive(true));
     }
 
-    public Product getProductById(Long id) {
-        return productRepository.findById(id).orElse(null);
+    public ProductResponseDTO getProductById(Long id) {
+        return mapProductToProductResponseDTO(productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found")));
+    }
+
+    public List<ProductResponseDTO> getAllProductsByBrand(long brandId) {
+        Brand brand = brandRepository.findById(brandId).get();
+        List<Product> products = productRepository.findByBrand(brand);
+        return mapProductsToProductResponseDTOs(products);
+    }
+
+    public List<ProductResponseDTO> getActiveProductsByBrand(long brandId) {
+        Brand brand = brandRepository.findById(brandId).get();
+        List<Product> products = productRepository.findByBrandAndActive(brand, true);
+        return mapProductsToProductResponseDTOs(products);
+    }
+
+    public List<ProductResponseDTO> getAllProductsByCategories(List<Long> categoryIds) {
+        List<Category> categories = categoryRepository.findAllById(categoryIds);
+        if (categories.size() != categoryIds.size()) {
+            throw new RuntimeException("One or more categories not found");
+        }
+
+        List<Product> products = productRepository.findAllByCategories(categoryIds);
+
+        return mapProductsToProductResponseDTOs(products);
+
+    }
+
+    public List<ProductResponseDTO> getActiveProductsByCategories(List<Long> categoryIds) {
+        List<Category> categories = categoryRepository.findAllById(categoryIds);
+        if (categories.size() != categoryIds.size()) {
+            throw new RuntimeException("One or more categories not found");
+        }
+
+        List<Product> products = productRepository.findActiveByCategories(categoryIds);
+
+        return mapProductsToProductResponseDTOs(products);
+
+    }
+
+    public List<ProductResponseDTO> getAllProductsBySearchQuery(String searchQuery) {
+        List<Product> products = productRepository.findByNameContainingIgnoreCase(searchQuery);
+
+        return products != null ? mapProductsToProductResponseDTOs(products) : Collections.emptyList();
+    }
+
+    public List<ProductResponseDTO> getActiveProductsBySearchQuery(String searchQuery) {
+        List<Product> products = productRepository.findByNameContainingIgnoreCaseAndActive(searchQuery, true);
+
+        return products != null ? mapProductsToProductResponseDTOs(products) : Collections.emptyList();
+    }
+
+    public List<ProductResponseDTO> getAllProductsByFieldAndAscOrDesc(String field, boolean isAsc) {
+        return isAsc ? mapProductsToProductResponseDTOs(productRepository.findAll(Sort.by(field).ascending())) : mapProductsToProductResponseDTOs(productRepository.findAll(Sort.by(field).descending()));
     }
 
     @Transactional
-    public Product addProduct(ProductRequestDTO productRequestDTO) {
+    public ProductResponseDTO addProduct(ProductRequestDTO productRequestDTO) {
 
         Brand brand = brandRepository.findById(productRequestDTO.getBrandId())
                 .orElseThrow(() -> new RuntimeException("Brand not found"));
@@ -60,22 +121,65 @@ public class ProductService {
         if (categories.size() != productRequestDTO.getCategoryIds().size()) {
             throw new RuntimeException("One or more categories not found");
         }
-
         Product product = productMapper.toEntity(productRequestDTO);
+        product.setNoSold(0);
+        product.setActive(true);
         product.setBrand(brand);
         product.setCategories(categories);
         List<ProductImage> images = handleProductImages(productRequestDTO.getNewImageFiles(), product);
         product.setProductImages(images);
+        product.setAddedDate(new Date());
+        product.setLastModifiedDate(product.getAddedDate());
         try {
-            productRepository.save(product);
-            return product;
+            return productMapper.toResponseDTO(productRepository.save(product));
         } catch (Exception e) {
             throw new RuntimeException("Failed to save product", e);
         }
     }
 
     @Transactional
-    public Product updateProduct(ProductRequestDTO productRequestDTO) {
+    public ProductResponseDTO addReview(ReviewRequestDTO reviewRequestDTO) {
+        long productId = reviewRequestDTO.getProductId();
+        String username = reviewRequestDTO.getUsername();
+
+
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+        User user = userRepository.findById(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        ProductReview productReview = productReviewMapper.toEntity(reviewRequestDTO);
+
+        productReview.setProduct(product);
+        productReview.setUser(user);
+        productReview.setUploadedDate(new Date());
+
+        if (reviewRequestDTO.getImage() != null) {
+            Path uploadPath = Paths.get(UPLOAD_REVIEW_IMG_DIR);
+            try {
+                if (!Files.exists(uploadPath)) {
+                    Files.createDirectories(uploadPath);
+                }
+                String storedFileName = System.currentTimeMillis() + "_" + reviewRequestDTO.getImage().getOriginalFilename();
+                try (InputStream inputStream = reviewRequestDTO.getImage().getInputStream()) {
+                    Files.copy(inputStream, Paths.get(UPLOAD_REVIEW_IMG_DIR, storedFileName), StandardCopyOption.REPLACE_EXISTING);
+                    productReview.setImagePath(storedFileName);
+                } catch (IOException e) {
+                    throw new RuntimeException("Failed to save image", e);
+                }
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to create upload directory", e);
+            }
+        }
+
+        productReviewRepository.save(productReview);
+        product.getProductReviews().add(productReview);
+        user.getProductReviews().add(productReview);
+        return mapProductToProductResponseDTO(product);
+
+    }
+
+    @Transactional
+    public ProductResponseDTO updateProduct(ProductRequestDTO productRequestDTO) {
         Product product = productRepository.findById(productRequestDTO.getProductId())
                 .orElseThrow(() -> new RuntimeException("Product not found"));
         Brand brand = brandRepository.findById(productRequestDTO.getBrandId())
@@ -105,17 +209,28 @@ public class ProductService {
         product.setCategories(categories);
         product.getProductImages().clear();
         product.getProductImages().addAll(newImages);
-
+        product.setLastModifiedDate(new Date());
         if (imagesToDelete != null) {
             removeImages(imagesToDelete);
         }
-        return product;
+        return mapProductToProductResponseDTO(product);
     }
+
+    public String deactivateProduct(long id) {
+        productRepository.setActivateProduct(false, id);
+        return "Product deactivated";
+    }
+
+    public String activateProduct(long id) {
+        productRepository.setActivateProduct(true, id);
+        return "Product activated";
+    }
+
 
     private List<ProductImage> handleProductImages(List<MultipartFile> imageFiles, Product product) {
         List<ProductImage> productImageList = new ArrayList<>();
         if (imageFiles != null) {
-            Path uploadPath = Paths.get(UPLOAD_DIR);
+            Path uploadPath = Paths.get(UPLOAD_PRODUCT_IMG_DIR);
             try {
                 if (!Files.exists(uploadPath)) {
                     Files.createDirectories(uploadPath);
@@ -123,7 +238,7 @@ public class ProductService {
                 for (MultipartFile image : imageFiles) {
                     String storedFileName = (new Date()).getTime() + "_" + image.getOriginalFilename();
                     try (InputStream inputStream = image.getInputStream()) {
-                        Files.copy(inputStream, Paths.get(UPLOAD_DIR, storedFileName), StandardCopyOption.REPLACE_EXISTING);
+                        Files.copy(inputStream, Paths.get(UPLOAD_PRODUCT_IMG_DIR, storedFileName), StandardCopyOption.REPLACE_EXISTING);
                         productImageList.add(ProductImage.builder()
                                 .imagePath(storedFileName)
                                 .product(product)
@@ -141,7 +256,7 @@ public class ProductService {
 
     private void removeImages(List<ProductImage> images) {
         for (ProductImage image : images) {
-            Path imagePath = Paths.get(UPLOAD_DIR, image.getImagePath());
+            Path imagePath = Paths.get(UPLOAD_PRODUCT_IMG_DIR, image.getImagePath());
             try {
                 Files.deleteIfExists(imagePath);
             } catch (IOException e) {
@@ -150,24 +265,31 @@ public class ProductService {
         }
     }
 
-    public String deactivateProduct(long id) {
-        productRepository.setActivateProduct(false, id);
-        return "Product deactivated";
+    private double calculateAverageRating(List<ProductReview> productReviews) {
+        if (productReviews == null || productReviews.isEmpty()) {
+            return 0;
+        }
+        int totalStars = 0;
+        for (ProductReview review : productReviews) {
+            totalStars += review.getStar();
+        }
+        double average = (double) totalStars / productReviews.size();
+        return Math.round(average * 10.0) / 10.0;
     }
 
-    public String activateProduct(long id) {
-        productRepository.setActivateProduct(true, id);
-        return "Product activated";
+    private ProductResponseDTO mapProductToProductResponseDTO(Product product) {
+        ProductResponseDTO productResponseDTO = productMapper.toResponseDTO(product);
+        productResponseDTO.setAverageRating(calculateAverageRating(product.getProductReviews()));
+        return productResponseDTO;
     }
 
-    public List<Product> searchProducts(String keyword, List<Long> categoryIds, Long brandId) {
-        return productRepository.findAll().stream()
-                .filter(product -> (keyword == null || product.getName().contains(keyword) || product.getDescription().contains(keyword)) &&
-                        (categoryIds == null || product.getCategories().stream().anyMatch(category -> categoryIds.contains(category.getCategoryId()))) &&
-                        (brandId == null || product.getBrand().getBrandId() == brandId))
-                .collect(Collectors.toList());
+    private List<ProductResponseDTO> mapProductsToProductResponseDTOs(List<Product> products) {
+        List<ProductResponseDTO> productResponseDTOs = new ArrayList<>();
+        for (Product product : products) {
+            productResponseDTOs.add(mapProductToProductResponseDTO(product));
+        }
+        return productResponseDTOs;
     }
-
 
 
 }

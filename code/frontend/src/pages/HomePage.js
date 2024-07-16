@@ -1,22 +1,62 @@
 import React, { useEffect, useState } from "react";
-import Header from "../components/Header";
-import { Link, useNavigate } from "react-router-dom";
-import { routes } from "../routes";
-import Footer from "../components/Footer";
-import { ToastContainer, toast } from "react-toastify";
-import { articles, brands, products } from "../services/auth/UsersService";
-import BrandPresentation from "../components/BrandPresentation";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import "../assets/css/homePage.css";
+import ArticlePresentation from "../components/ArticlePresentation";
+import BrandPresentation from "../components/BrandPresentation";
+import Footer from "../components/Footer";
+import Header from "../components/Header";
 import ProductPresentation from "../components/ProductPresentation";
 import Sidebar from "../components/SideBar";
+import { routes } from "../routes";
+import {
+  articles,
+  brands,
+  getCart,
+  increaseSiteVisits,
+  products,
+} from "../services/auth/UsersService";
 
 export default function HomePage() {
   const [productList, setProductList] = useState([]);
   const [brandList, setBrandList] = useState([]);
   const [articleList, setArticleList] = useState([]);
+  const [loggedIn, setLoggedIn] = useState(
+    localStorage.getItem("token") ? true : false
+  );
+  const location = useLocation();
   const navigate = useNavigate();
 
+
   useEffect(() => {
+    const checkAuthentication = () => {
+      const userRole = localStorage.getItem("userRole");
+      if (userRole === "ROLE_STAFF") {
+        navigate(routes.manageOrder);
+      } else if (userRole === "ROLE_ADMIN") {
+        navigate(routes.dashboard);
+      }
+    };
+    checkAuthentication();
+  }, [navigate]);
+
+  useEffect(() => {
+    increaseSiteVisits()
+  }, [navigate])
+
+
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const status = queryParams.get("status");
+    if (status === "payment-fail") {
+      toast.error("Thanh toán thất bại");
+    } else if (status === "payment-success") {
+      toast.success("Thanh toán thành công");
+      localStorage.removeItem("cart");
+      localStorage.removeItem("gifts");
+      localStorage.removeItem("formValues");
+    }
+
     const fetchProducts = async () => {
       try {
         let response = await products();
@@ -27,7 +67,6 @@ export default function HomePage() {
         }
       } catch (error) {
         console.error("Error fetching products:", error);
-        toast.error("Không thể tải sản phẩm");
         setProductList([]);
       }
     };
@@ -42,8 +81,7 @@ export default function HomePage() {
         }
       } catch (error) {
         console.error("Error fetching brands:", error);
-        toast.error("Không thể tải được nhãn hàng");
-        setBrandList([]);
+        setArticleList([]);
       }
     };
 
@@ -57,61 +95,64 @@ export default function HomePage() {
         }
       } catch (error) {
         console.error("Error fetching articles:", error);
-        toast.error("Không thể tải được tin tức");
         setBrandList([]);
       }
     };
 
-    // chỗ này để vô trang tài khoản
+    const fetchCartData = async () => {
+      try {
+        const resCart = await getCart();
+        const cart = [];
+        resCart.orderDetails?.forEach((item) =>
+          cart.push({ ...item.product, quantity: item.quantity })
+        );
+        localStorage.removeItem("cart");
+        localStorage.setItem("cart", JSON.stringify(cart));
 
-    // if (localStorage.getItem("token")) {
-    //   const fetchCustomerInfo = async () => {
-    //     try {
-    //       const token = localStorage.getItem("token");
-    //       const decoded = jwtDecode(token);
-    //       let response = await users();
-    //       if (response) {
-    //         const userInfo = response.find(
-    //           (user) => user.username === decoded.sub
-    //         );
-    //         setCustomerInfo(userInfo);
-    //       } else {
-    //         setCustomerInfo([]);
-    //       }
-    //     } catch (error) {
-    //       console.error("Error fetching customer info:", error);
-    //       toast.error("Không thể tải thông tin khách hang");
-    //     }
-    //   };
-
-    //   fetchCustomerInfo();
-    // }
+        const gifts = [];
+        resCart.giftIncludings?.forEach((item) =>
+          gifts.push({ ...item.gift, quantity: item.quantity })
+        );
+        localStorage.removeItem("gifts");
+        localStorage.setItem("gifts", JSON.stringify(gifts));
+      } catch (error) {
+        console.error("Error fetching cart:", error);
+      }
+    };
 
     fetchBrands();
     fetchProducts();
     fetchArticles();
+    if (localStorage.getItem("userRole") === "ROLE_CUSTOMER") {
+      fetchCartData();
+    }
   }, []);
+
+  const handleLogoutSuccess = () => {
+    setLoggedIn(false);
+  };
 
   return (
     <div>
-      <ToastContainer />
-      <Header />
+      <Header handleLogoutSuccess={handleLogoutSuccess} />
 
       <div className="content">
         <Sidebar
+          loggedIn={loggedIn}
           role={localStorage.getItem("userRole")}
-          customerName={localStorage.getItem("username")}
+          customerName={localStorage.getItem("name")}
           customerPoint={localStorage.getItem("point")}
         />
 
         <div className="content-detail">
           <div className="content-display ">
             <div className="content-row-1">
-              <div className="row-1-top " style={{ width: "100%" }}>
+              <div className="row-top " style={{ width: "100%" }}>
                 <h4>Thương hiệu</h4>
                 <Link
                   to={routes.brands}
-                  style={{ textDecoration: "none", color: "#ff469e" }}>
+                  style={{ textDecoration: "none", color: "#ff469e" }}
+                >
                   Xem tất cả <i className="fa-solid fa-arrow-right"></i>
                 </Link>
               </div>
@@ -119,13 +160,25 @@ export default function HomePage() {
                 <BrandPresentation brands={brandList} />
               </div>
             </div>
-            <div className="content-row-2">Article</div>
+            <div className="content-row-2">
+              <div className="row-top">
+                <h4>Thông tin bổ ích</h4>
+                <Link
+                  to={routes.articles}
+                  style={{ textDecoration: "none", color: "#ff469e" }}
+                >
+                  Xem tất cả <i className="fa-solid fa-arrow-right"></i>
+                </Link>
+              </div>
+              <ArticlePresentation articles={articleList} />
+            </div>
             <div className="content-row-3">
-              <div className="row-3-top ">
+              <div className="row-top ">
                 <h4>Sản phẩm</h4>
                 <Link
                   to={routes.products}
-                  style={{ textDecoration: "none", color: "#ff469e" }}>
+                  style={{ textDecoration: "none", color: "#ff469e" }}
+                >
                   Xem tất cả <i className="fa-solid fa-arrow-right"></i>
                 </Link>
               </div>

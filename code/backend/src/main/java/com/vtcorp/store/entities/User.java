@@ -2,6 +2,8 @@ package com.vtcorp.store.entities;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonView;
+import com.vtcorp.store.jsonview.Views;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -17,18 +19,21 @@ import java.util.List;
 public class User {
 
     @Id
+    @JsonView(Views.Order.class)
     private String username;
     private String password;
+
+    @JsonView(Views.Product.class)
     private String name;
     private String mail;
     private String phone;
-    private String city;
-    private String district;
-    private String ward;
+    private Long cityCode;
+    private Long districtId;
+    private Long wardCode;
     private String street;
     private Integer point;
     private String role;
-    @JsonFormat(pattern = "dd-MM-yyyy")
+    @JsonFormat(pattern = "dd-MM-yyyy", timezone = "Asia/Ho_Chi_Minh")
     private Date registeredDate;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -42,5 +47,8 @@ public class User {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductReview> productReviews;
+
+    @OneToMany(mappedBy = "belongTo", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Message> messages;
 
 }

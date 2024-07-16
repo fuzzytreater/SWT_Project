@@ -1,8 +1,9 @@
 package com.vtcorp.store.entities;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonView;
+import com.vtcorp.store.jsonview.Views;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -19,16 +20,26 @@ public class Product {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @JsonView({Views.Cart.class, Views.Order.class, Views.Article.class})
     private long productId;
+
+    @JsonView({Views.Cart.class, Views.Order.class, Views.Article.class})
     private String name;
+
+    @JsonView(Views.Cart.class)
     private Double listedPrice;
+
+    @JsonView(Views.Cart.class)
     private Double sellingPrice;
+
     private String description;
     private Integer noSold;
+
+    @JsonView(Views.Cart.class)
     private Integer stock;
     private boolean active;
-    @JsonFormat(pattern = "dd-MM-yyyy")
     private Date addedDate;
+    private Date lastModifiedDate;
 
     @ManyToOne
     @JoinColumn(name = "fk_brand_id")
@@ -52,6 +63,7 @@ public class Product {
     private List<ProductReview> productReviews;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonView({Views.Cart.class, Views.Order.class})
     private List<ProductImage> productImages;
 
 }

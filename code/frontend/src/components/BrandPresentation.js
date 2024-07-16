@@ -1,10 +1,10 @@
 import React from "react";
-import { routes } from "../routes";
 import { Link } from "react-router-dom";
-import "../assets/css/brandPresentation.css";
-import "slick-carousel/slick/slick.css";
-import "slick-carousel/slick/slick-theme.css";
 import Slider from "react-slick";
+import "slick-carousel/slick/slick-theme.css";
+import "slick-carousel/slick/slick.css";
+import "../assets/css/brandPresentation.css";
+import { routes } from "../routes";
 import instance from "../services/auth/customize-axios";
 
 export default function BrandPresentation({ brands }) {
@@ -42,29 +42,31 @@ export default function BrandPresentation({ brands }) {
   };
 
   return (
-    <div className="slider-container">
-      <Slider {...settings}>
-        {brands.map((brand) => (
-          <div className="brand-card" id={brand.brandId}>
-            <Link to={`${routes.brands}/${brand.name}`}>
-              <div className="brand-card-img">
-                <img
-                  src={`${instance.defaults.baseURL}/images/brands/${brand.logo}`}
-                  alt={brand.name}
-                />
-              </div>
-            </Link>
-            <div className="brand-card-btn">
-              <Link
-                to={`${routes.brands}/${brand.name}`}
-                className="brand-btn"
-                style={{ textDecoration: "none" }}>
-                {brand.name}
+      <div className="slider-container">
+        <Slider {...settings}>
+          {brands.map((brand) => (
+            <div className="brand-card" id={brand.brandId} key={brand.brandId}>
+              <Link to={`${routes.brands}/${brand.name}`}>
+                <div className="brand-card-img">
+                  <img
+                    src={`${instance.defaults.baseURL}/images/brands/${brand.logo}`}
+                    alt={brand.name}
+                  />
+                </div>
               </Link>
+              <div className="brand-card-btn">
+                <Link
+                  to={`${routes.brands}/${brand.name}`}
+                  className="brand-btn"
+                  style={{ textDecoration: "none" }}
+                >
+                  {brand.name}
+                </Link>
+              </div>
             </div>
-          </div>
-        ))}
-      </Slider>
-    </div>
+          ))}
+        </Slider>
+      </div>
+
   );
 }

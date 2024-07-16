@@ -1,10 +1,15 @@
 package com.vtcorp.store.controllers;
 
+import com.vtcorp.store.dtos.MailDTO;
+import com.vtcorp.store.dtos.PasswordDTO;
 import com.vtcorp.store.dtos.UserRequestDTO;
+import com.vtcorp.store.constants.Role;
+import com.vtcorp.store.services.OrderService;
 import com.vtcorp.store.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -12,10 +17,12 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService userService;
+    private final OrderService orderService;
 
     @Autowired
-    public UserController(UserService userService) {
+    public UserController(UserService userService, OrderService orderService) {
         this.userService = userService;
+        this.orderService = orderService;
     }
 
     @Operation(summary = "Get all users")
@@ -23,6 +30,16 @@ public class UserController {
     public ResponseEntity<?> getAllUsers() {
         try {
             return ResponseEntity.ok(userService.getAllUsers());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "Get all users by role", description = "role: admin, customer, staff")
+    @GetMapping("/role/{role}")
+    public ResponseEntity<?> getUsersByRole(@PathVariable String role) {
+        try {
+            return ResponseEntity.ok(userService.getUsersByRole(role));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -42,8 +59,8 @@ public class UserController {
     @PostMapping
     public ResponseEntity<?> addUser(@RequestBody UserRequestDTO userRequestDTO) {
         String role = userRequestDTO.getRole();
-        if (role == null || (!role.equals("ROLE_ADMIN") && !role.equals("ROLE_CUSTOMER")
-                && !role.equals("ROLE_STAFF"))) {
+        if (role == null || (!role.equals(Role.ROLE_ADMIN) && !role.equals(Role.ROLE_CUSTOMER)
+                && !role.equals(Role.ROLE_STAFF))) {
             return ResponseEntity.badRequest().body("Invalid role");
         }
         try {
@@ -55,34 +72,35 @@ public class UserController {
 
     @Operation(summary = "Update user by username", description = "Cannot update username, mail, password and role")
     @PutMapping("/{username}")
-    public ResponseEntity<?> updateUser(@PathVariable String username, @RequestBody UserRequestDTO userRequestDTO) {
+    public ResponseEntity<?> updateUser(@PathVariable String username, @RequestBody UserRequestDTO userRequestDTO, Authentication authentication) {
         if (!username.equals(userRequestDTO.getUsername())) {
             return ResponseEntity.badRequest().body("Username in URL and body must be the same");
         }
         try {
-            return ResponseEntity.ok(userService.updateUser(userRequestDTO));
+            String usernameAuth = (authentication != null) ? authentication.getName() : null;
+            return ResponseEntity.ok(userService.updateUser(userRequestDTO, usernameAuth));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    @Operation(summary = "Update user's email by username", description = "Send a link with token to the new email to confirm")
-    @PutMapping("/{username}/mail")
-    public ResponseEntity<?> updateMail(@PathVariable String username, @RequestParam String newMail) {
+    @GetMapping("/hasBoughtProduct")
+    public ResponseEntity<?> hasUserBoughtProduct(@RequestParam String username, @RequestParam Long productId){
         try {
-            return ResponseEntity.ok(userService.updateMail(username, newMail));
+            return ResponseEntity.ok(orderService.hasUserBoughtProduct(username, productId));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    @Operation(summary = "Confirm email change", description = "Validates the token and update the email")
-    @PutMapping("/confirm-mail-change")
-    public ResponseEntity<?> confirmMailChange(@RequestParam String token) {
+    @Operation(summary = "Change password of user by username")
+    @PutMapping("/change-password/{username}")
+    public ResponseEntity<?> changePassword(@PathVariable String username, @RequestBody PasswordDTO passwordDTO) {
         try {
-            return ResponseEntity.ok(userService.confirmMailChange(token));
+            return ResponseEntity.ok(userService.changePassword(username, passwordDTO));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
 }

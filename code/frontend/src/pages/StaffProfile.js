@@ -1,89 +1,69 @@
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { routes } from "../routes";
+import { useNavigate } from "react-router-dom";
+import "../assets/css/saProfile.css";
 import StaffHeader from "../components/StaffHeader";
-import { ToastContainer, toast } from "react-toastify";
+import StaffSideBar from "../components/StaffSideBar";
+import { routes } from "../routes";
 import {
-  articles,
-  brands,
-  handleLogout,
-  products,
-  users,
+  getUserInfo,
 } from "../services/auth/UsersService";
-import BrandPresentation from "../components/BrandPresentation";
-import ProductPresentation from "../components/ProductPresentation";
-import ManageSidebar from "../components/ManageSideBar";
-import { jwtDecode } from "jwt-decode";
-import "../assets/css/staff.css";
+export default function ProfileCus() {
+  const navigate = useNavigate();
+  const [staffInfo, setStaffInfo] = useState({});
 
-export default function ManageProduct() {
-    const [productList, setProductList] = useState([]);
 
-    const navigate = useNavigate();
-
-    useEffect(() => {
-
-      const checkAuthentication = () => {
-        const userRole = localStorage.getItem("userRole");
-        if (!userRole || userRole !== "ROLE_STAFF") {
-            navigate('/');
-        }
-      };
-      checkAuthentication();
-
-        const fetchProducts = async () => {
-          try {
-            let response = await products();
-            if (response) {
-              setProductList(response.slice(0, 20));
-            } else {
-              setProductList([]);
-            }
-          } catch (error) {
-            console.error("Error fetching products:", error);
-            toast.error("Không thể tải sản phẩm");
-            setProductList([]);
-          }
-        };
-        fetchProducts();
-    }, []);
-
-    return (
-        <div>
-            <ToastContainer />
-            <header className="staff-header">
-        
-            <div className="staff-store-name">
-                <Link to={routes.homePage} style={{ color: 'white' }}>
-                    Little Lovely
-                </Link>
-            </div>
-            </header>
-    
-            <div className="manage-content">
-                <ManageSidebar
-                    handleLogout={handleLogout(navigate)}
-                />
-                <div className="staff-content-detail">   
-                    <div className="staff-profile">
-
-                        <div className="staff-avatar">
-                            <img src="path/to/placeholder/avatar.png" alt="" />   
-                        </div>
-
-                        <div className="staff-info">
-                        </div>
-
-                        <div className="staff-update-info">
-                            <Link to="#">
-                                <button>Chỉnh sửa thông tin</button>
-                            </Link> 
-
-                                                    
-                        </div>
-                    </div>
-                </div>        
-            </div>
-        </div>
-      );
+  useEffect(() => {
+    const userRole = localStorage.getItem("userRole");
+    if (userRole !== "ROLE_STAFF") {
+      navigate(routes.homePage);
     }
+
+    const fetchUser = async () => {
+      try {
+        const res = await getUserInfo(localStorage.getItem("username"));
+        setStaffInfo(res);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    fetchUser();
+
+  }, [navigate]);
+
+  return (
+    <div>
+      <StaffHeader />
+      <div className="manage-content">
+        <StaffSideBar />
+        <div className="manage-content-detail">
+          <div className="sa-profile-content-tbl">
+            <div className="sa-row-top">
+              Thông tin cá nhân
+            </div>
+            <div className="sa-profile-content-detail">
+              <div className="sa-profile-content-detail-description">
+                <div className="sa-profile-content-detail-description-item">
+                  <h5>Tên: </h5>
+                  <div>{staffInfo.name}</div>
+                </div>
+                <div className="sa-profile-content-detail-description-item">
+                  <h5>Tên tài khoản: </h5>
+                  <div>{staffInfo.username}</div>
+                </div>
+                <div className="sa-profile-content-detail-description-item">
+                  <h5>Gmail: </h5>
+                  <div>{staffInfo.mail}</div>
+                </div>
+                <div className="sa-profile-content-detail-description-item">
+                  <h5>Số điện thoại: </h5>
+                  <div>{staffInfo.phone}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+

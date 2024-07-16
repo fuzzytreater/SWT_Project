@@ -8,7 +8,6 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
 public class ProductRequestDTO {
 
     private long productId;
@@ -16,9 +15,7 @@ public class ProductRequestDTO {
     private Double listedPrice;
     private Double sellingPrice;
     private String description;
-    private Integer noSold = 0;
     private Integer stock;
-    private boolean active = true;
 
     private long brandId;
     private List<Long> categoryIds;

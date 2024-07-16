@@ -1,9 +1,13 @@
 package com.vtcorp.store.services;
 
+import com.vtcorp.store.constants.Role;
 import com.vtcorp.store.dtos.*;
 import com.vtcorp.store.entities.User;
+import com.vtcorp.store.entities.Voucher;
 import com.vtcorp.store.mappers.UserMapper;
 import com.vtcorp.store.repositories.UserRepository;
+import com.vtcorp.store.repositories.VoucherRepository;
+import com.vtcorp.store.utils.CodeGenerator;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -14,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.List;
 
 @Service
@@ -25,16 +30,18 @@ public class UserService {
     private final TokenService tokenService;
     private final UserMapper userMapper;
     private final EmailSenderService emailSenderService;
+    private final VoucherRepository voucherRepository;
 
     @Autowired
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
-                       AuthenticationManager authenticationManager, TokenService tokenService, UserMapper userMapper, EmailSenderService emailSenderService) {
+                       AuthenticationManager authenticationManager, TokenService tokenService, UserMapper userMapper, EmailSenderService emailSenderService, VoucherRepository voucherRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.tokenService = tokenService;
         this.userMapper = userMapper;
         this.emailSenderService = emailSenderService;
+        this.voucherRepository = voucherRepository;
     }
 
     public String login(LoginDTO loginDTO) {
@@ -49,15 +56,26 @@ public class UserService {
     }
 
     public String register(UserRequestDTO userRequestDTO) {
-        if (userRepository.existsByUsername(userRequestDTO.getUsername())) {
-            throw new IllegalArgumentException("User already exists");
+        if (userRepository.existsByMail(userRequestDTO.getMail())) {
+            throw new IllegalArgumentException("Mail already used");
         }
+        if (userRepository.existsByPhone(userRequestDTO.getPhone())) {
+            throw new IllegalArgumentException("Phone already used");
+        }
+        List<Voucher> vouchers = voucherRepository.findAll();
         User user = userMapper.toEntity(userRequestDTO);
+        user.setUsername(CodeGenerator.generateUsername());
         user.setPassword(passwordEncoder.encode(userRequestDTO.getPassword()));
-        user.setRole("ROLE_CUSTOMER");
+        user.setRole(Role.ROLE_CUSTOMER);
+        user.setPoint(0);
+        user.setRegisteredDate(new Date());
+        for (Voucher voucher : vouchers) {
+            voucher.getUsers().add(user);
+        }
+        user.setVouchers(vouchers);
         user = userRepository.save(user);
-        emailSenderService.sendEmail(user.getMail(), "Welcome to our store", "Welcome to our store, " + user.getName());
-        return tokenService.generateAccessToken(user);
+        emailSenderService.sendWelcomeEmailAsync(user.getMail(), user.getName());
+        return "User registered successfully";
     }
 
     public UserResponseDTO addUser(UserRequestDTO userRequestDTO) {
@@ -66,6 +84,7 @@ public class UserService {
         }
         User user = userMapper.toEntity(userRequestDTO);
         user.setPassword(passwordEncoder.encode(userRequestDTO.getPassword()));
+        user.setRegisteredDate(new Date());
         return userMapper.toResponseDTO(userRepository.save(user));
     }
 
@@ -78,20 +97,16 @@ public class UserService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found")));
     }
 
-    public String forgotPassword(ForgotPasswordDTO forgotPasswordDTO) {
-        if (!userRepository.existsByMail(forgotPasswordDTO.getMail())) {
-            throw new IllegalArgumentException("Mail not found");
-        }
-        String token = tokenService.generatePasswordResetToken(forgotPasswordDTO.getMail());
-        String content = "<p>Click to recover password: </p>" +
-                "<a href='http://localhost:3000/reset-password?token=" +
-                token + "'>Recover password</a>";
-        emailSenderService.sendEmail(forgotPasswordDTO.getMail(), "Password recovery", content);
+    public String forgotPassword(MailDTO mailDTO) {
+        User user = userRepository.findByMail(mailDTO.getMail()).orElseThrow(() -> new IllegalArgumentException("Mail not found"));
+        String token = tokenService.generatePasswordResetToken(mailDTO.getMail());
+        String link = "http://localhost:3000/reset-password?token=" + token;
+        emailSenderService.sendForgotPasswordEmailAsync(mailDTO.getMail(), user.getName(), link);
         return "Check your email to recover password";
     }
 
-    public String changePassword(ChangePasswordDTO changePasswordDTO) {
-        String token = changePasswordDTO.getToken();
+    public String resetPassword(PasswordDTO passwordDTO) {
+        String token = passwordDTO.getToken();
         if (token == null) {
             throw new IllegalArgumentException("Token not found");
         }
@@ -100,44 +115,69 @@ public class UserService {
         if (user == null) {
             throw new IllegalArgumentException("User not found");
         }
-        user.setPassword(passwordEncoder.encode(changePasswordDTO.getNewPassword()));
+        user.setPassword(passwordEncoder.encode(passwordDTO.getNewPassword()));
         userRepository.save(user);
-        emailSenderService.sendEmail(mail, "Password Changed", "Your password has been changed successfully");
+        emailSenderService.sendSuccessResetPasswordEmailAsync(mail, user.getName());
         return "Password changed successfully";
     }
 
     @Transactional
-    public UserResponseDTO updateUser(UserRequestDTO userRequestDTO) {
+    public UserResponseDTO updateUser(UserRequestDTO userRequestDTO, String usernameAuth) {
         User user = userRepository.findById(userRequestDTO.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
         userMapper.updateEntity(userRequestDTO, user);
+        User userAuth = (usernameAuth != null) ? userRepository.findById(usernameAuth).orElse(null) : null;
+        String mail = userRequestDTO.getMail();
+        if (mail != null && userAuth != null && userAuth.getRole().equals(Role.ROLE_ADMIN) && (user.getRole().equals(Role.ROLE_ADMIN) || user.getRole().equals(Role.ROLE_STAFF))) {
+            user.setMail(mail);
+        }
         userRepository.save(user);
         return userMapper.toResponseDTO(user);
     }
 
-    public String updateMail(String username, String newMail) {
-        if (!userRepository.existsByUsername(username)) {
-            throw new IllegalArgumentException("User not found");
+    public String updateMail(String username, MailDTO mailDTO) {
+        User user = userRepository.findById(username).orElseThrow(() -> new IllegalArgumentException("User not found"));
+        String newMail = mailDTO.getMail();
+        if (newMail == null || newMail.isEmpty()) {
+            throw new IllegalArgumentException("No mail provided");
         }
         if (userRepository.existsByMail(newMail)) {
             throw new IllegalArgumentException("Mail already exists");
         }
         String token = tokenService.generateMailChangeToken(username, newMail);
-        String content = "<p>Click to confirm mail change: </p>" +
-                "<a href='http://localhost:3000/confirm-mail?token=" +
-                token + "'>Confirm mail change</a>";
-        emailSenderService.sendEmail(newMail, "Mail change", content);
+        String link = "http://localhost:8010/api/auth/confirm-change-mail?token=" + token;
+        emailSenderService.sendChangeEmailAsync(newMail, user.getName(), link);
         return "Check your email to confirm mail change";
     }
 
-    public String confirmMailChange(String token) {
+    public String confirmChangeMail(String token) {
         Jwt jwt = tokenService.validateToken(token);
         String username = jwt.getSubject();
         String newEmail = (String) jwt.getClaims().get("newEmail");
         User user = userRepository.findById(username).orElseThrow(() -> new IllegalArgumentException("User not found"));
         user.setMail(newEmail);
         userRepository.save(user);
-        return "Mail changed successfully";
+        emailSenderService.sendSuccessChangeEmailAsync(user.getMail(), user.getName());
+        return "http://localhost:3000/profile?msg=mail-changed";
     }
 
+    public List<UserResponseDTO> getUsersByRole(String role) {
+        switch (role) {
+            case "admin" -> role = Role.ROLE_ADMIN;
+            case "customer" -> role = Role.ROLE_CUSTOMER;
+            case "staff" -> role = Role.ROLE_STAFF;
+        }
+        return userMapper.toResponseDTOs(userRepository.findByRole(role));
+    }
+
+    public String changePassword(String username, PasswordDTO passwordDTO) {
+        User user = userRepository.findById(username).orElseThrow(() -> new IllegalArgumentException("User not found"));
+        if (!passwordEncoder.matches(passwordDTO.getCurrentPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("Incorrect current password");
+        }
+        user.setPassword(passwordEncoder.encode(passwordDTO.getNewPassword()));
+        userRepository.save(user);
+        emailSenderService.sendSuccessResetPasswordEmailAsync(user.getMail(), user.getName());
+        return "Password changed successfully";
+    }
 }

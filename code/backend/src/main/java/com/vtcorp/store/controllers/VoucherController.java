@@ -39,6 +39,16 @@ public class VoucherController {
         }
     }
 
+    @Operation(summary = "Get valid vouchers by username")
+    @GetMapping("/user/{username}")
+    public ResponseEntity<?> getValidVouchersByUsername(@PathVariable String username) {
+        try {
+            return ResponseEntity.ok(voucherService.getValidVouchersByUsername(username));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     @Operation(summary = "Get voucher by ID")
     @GetMapping("/{id}")
     public ResponseEntity<?> getVoucherById(@PathVariable Long id) {
@@ -71,4 +81,25 @@ public class VoucherController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @Operation(summary = "Deactivate voucher by ID")
+    @PutMapping("/deactivate/{id}")
+    public ResponseEntity<?> deactivateVoucher(@PathVariable long id) {
+        try {
+            return ResponseEntity.ok(voucherService.deactivateVoucher(id));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "Activate voucher by ID")
+    @PutMapping("/activate/{id}")
+    public ResponseEntity<?> activateVoucher(@PathVariable long id) {
+        try {
+            return ResponseEntity.ok(voucherService.activateVoucher(id));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
 }

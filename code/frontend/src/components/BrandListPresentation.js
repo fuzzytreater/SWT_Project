@@ -3,8 +3,9 @@ import { Link } from "react-router-dom";
 import { routes } from "../routes";
 import instance from "../services/auth/customize-axios";
 
-export default function BrandListPresentation({ brands }) {
+export default function BrandListPresentation({ brands}) {
   return (
+
     <>
       {brands.map((brand) => (
         <div className="brand-card-list" id={brand.brandId}>
@@ -27,5 +28,6 @@ export default function BrandListPresentation({ brands }) {
         </div>
       ))}
     </>
+
   );
 }

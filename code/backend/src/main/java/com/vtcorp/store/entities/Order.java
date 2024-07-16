@@ -1,6 +1,5 @@
 package com.vtcorp.store.entities;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
@@ -10,6 +9,7 @@ import java.util.List;
 
 @Entity
 @Data
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "order")
@@ -18,18 +18,20 @@ public class Order {
 
     @Id
     private String orderId;
-    @JsonFormat(pattern = "dd-MM-yyyy")
     private Date createdDate;
     private String status;
     private String cusName;
     private String cusMail;
     private String cusPhone;
-    private String cusCity;
-    private String cusDistrict;
-    private String cusWard;
+    private Long cusCityCode;
+    private Long cusDistrictId;
+    private Long cusWardCode;
     private String cusStreet;
     private Integer totalQuantity;
-    private Double totalPrice;
+    private Double basePrice;
+    private Double finalBasePrice;
+    private Double shippingFee;
+    private Double finalShippingFee;
     private Double postDiscountPrice;
     private Integer totalPoint;
     private String trackingCode;

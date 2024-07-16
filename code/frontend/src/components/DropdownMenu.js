@@ -1,13 +1,18 @@
 import React, { useState } from "react";
 import Dropdown from "react-bootstrap/Dropdown";
+import { Link, useNavigate } from "react-router-dom";
 import { CSSTransition } from "react-transition-group";
 import "../assets/css/dropdown.css";
-import { Link, useNavigate } from "react-router-dom";
+import { routes } from "../routes";
 import { handleLogout } from "../services/auth/UsersService";
 
-export default function DropdownMenu() {
+export default function DropdownMenu({ handleLogoutSuccess }) {
   const [showMenu, setShowMenu] = useState(false);
   const navigate = useNavigate();
+
+  const handleProfileClick = () => {
+    navigate(routes.profileCustomer);
+  };
 
   return (
     <Dropdown
@@ -24,16 +29,17 @@ export default function DropdownMenu() {
         unmountOnExit>
         <Dropdown.Menu className="dropdown-menu">
           <Link
-            to={{}}
+            onClick={handleProfileClick}
             style={{
               textDecoration: "none",
               width: "inherit",
               color: "black",
             }}>
-            <Dropdown.Item>Tài khoản</Dropdown.Item>
+            <Dropdown.Item> Tài khoản</Dropdown.Item>
           </Link>
+
           <Link
-            onClick={handleLogout(navigate)}
+            onClick={handleLogout(navigate, handleLogoutSuccess)}
             style={{
               textDecoration: "none",
               color: "black",

@@ -5,9 +5,23 @@ import BrandListPresentation from "../components/BrandListPresentation";
 import Breadcrumb from "../components/Breadcrum";
 import Footer from "../components/Footer";
 import Sidebar from "../components/SideBar";
+import "../assets/css/brandPresentation.css";
+import { useNavigate } from "react-router-dom";
 
 export default function BrandList() {
   const [brandList, setBrandList] = useState([]);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkAuthentication = () => {
+      const userRole = localStorage.getItem("userRole");
+      if (userRole === "ROLE_STAFF" || userRole === "ROLE_ADMIN") {
+        navigate("/");
+      }
+    };
+    checkAuthentication();
+  }, [navigate]);
+
   useEffect(() => {
     const fetchBrands = async () => {
       try {
@@ -32,7 +46,7 @@ export default function BrandList() {
       <div className="content">
         <Sidebar
           role={localStorage.getItem("userRole")}
-          customerName={localStorage.getItem("username")}
+          customerName={localStorage.getItem("name")}
           customerPoint={localStorage.getItem("point")}
         />
 
@@ -40,7 +54,7 @@ export default function BrandList() {
           <Breadcrumb value="Tất cả thương hiệu" />
           <div className="content-display ">
             <div className="content-row-1">
-              <div className="row-1-top" style={{ width: "100%" }}>
+              <div className="row-top" style={{ width: "100%" }}>
                 <h4>Tất cả thương hiệu</h4>
               </div>
               <div className="row-list-bottom">

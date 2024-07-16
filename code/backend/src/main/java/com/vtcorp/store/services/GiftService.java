@@ -3,6 +3,7 @@ package com.vtcorp.store.services;
 import com.vtcorp.store.dtos.GiftRequestDTO;
 import com.vtcorp.store.dtos.GiftResponseDTO;
 import com.vtcorp.store.entities.Gift;
+import com.vtcorp.store.entities.ProductImage;
 import com.vtcorp.store.mappers.GiftMapper;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,10 +57,29 @@ public class GiftService {
 
     //Not complete yet
     @Transactional
-    public Gift updateGift(GiftRequestDTO giftRequestDTO) {
-        Gift GiftResponseDTO = giftRepository.findById(giftRequestDTO.getGiftId())
+    public GiftResponseDTO updateGift(GiftRequestDTO giftRequestDTO) {
+        Gift gift = giftRepository.findById(giftRequestDTO.getGiftId())
                 .orElseThrow(() -> new RuntimeException("Gift not found"));
-        return null;
+        String image = "";
+        if (giftRequestDTO.getNewImageFile() == null || giftRequestDTO.getNewImageFile().isEmpty()) {
+            image = gift.getImagePath();
+        } else {
+            removeImage(gift.getImagePath());
+            image = handleGiftImage(giftRequestDTO.getNewImageFile());
+        }
+        giftMapper.updateEntity(giftRequestDTO, gift);
+        gift.setImagePath(image);
+        return giftMapper.toResponseDTO(giftRepository.save(gift));
+    }
+
+    public String deactivateProduct(long id) {
+        giftRepository.setActivateGift(false, id);
+        return "Gift deactivated";
+    }
+
+    public String activateProduct(long id) {
+        giftRepository.setActivateGift(true, id);
+        return "Gift activated";
     }
 
     private String handleGiftImage(MultipartFile imageFile) {
@@ -84,23 +104,13 @@ public class GiftService {
         return storedFileName;
     }
 
-    @Transactional
-    public String redeemGift(Long giftId, int userPoints) {
-        Gift gift = giftRepository.findById(giftId)
-                .orElseThrow(() -> new RuntimeException("Gift not found"));
-
-        if (!gift.isActive()) {
-            return "Gift is not active";
+    private void removeImage(String image) {
+        Path imagePath = Paths.get(UPLOAD_DIR, image);
+        try {
+            Files.deleteIfExists(imagePath);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to delete image", e);
         }
-
-        if (userPoints < gift.getPoint()) {
-            return "Not enough points to redeem this gift";
-        }
-
-        // Logic to apply the gift to the user's session
-        // For example, reduce the user's points and mark the gift as redeemed
-
-        return "Gift redeemed successfully";
     }
 
 }
